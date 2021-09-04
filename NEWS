@@ -1,0 +1,19 @@
+0.0.5 - 12 December 2014
+  * repackaged as an Open Source project with permission from my employer
+
+0.0.4 - 12 August 2014
+  * added "working directory" field to status file
+  * check working directory still exists after every sync attempt, as well as
+    when a watcher exits
+
+0.0.3 - 7 August 2014
+  * added "current action" field to status file
+
+0.0.2 - 6 August 2014
+  * added "temporary directory" parameter
+  * set default $PATH if one is not set in the environment
+  * record rsync errors in log file
+  * added "status file" parameter
+
+0.0.1 - 2 August 2014
+  * initial release

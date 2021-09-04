@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# Startup script for the continual sync daemon
+#
+# chkconfig: 345 99 01
+# description: continual sync daemon
+# processname: continual-sync
+# pidfile: /var/run/continual-sync.pid
+
+
+# Source function library.
+. /etc/rc.d/init.d/functions
+
+# See how we were called.
+case "$1" in
+  start)
+	echo -n "Starting continual sync daemon: "
+	daemon continual-sync -D /var/run/continual-sync.pid
+	echo
+	touch /var/lock/subsys/continual-sync
+	;;
+  stop)
+	echo -n "Shutting down continual sync daemon: "
+	killproc continual-sync
+	echo
+	rm -f /var/lock/subsys/continual-sync
+	rm -f /var/run/continual-sync.pid
+	;;
+  status)
+	status continual-sync
+	;;
+  restart)
+	$0 stop
+	$0 start
+	;;
+  condrestart)
+	[ -f /var/lock/subsys/continual-sync ] && $0 restart || :
+	;;
+  *)
+	echo "Usage: $0 {start|stop|restart|status|condrestart}"
+	exit 1
+esac
+
+exit 0
+
+# EOF

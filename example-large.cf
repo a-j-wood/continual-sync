@@ -1,0 +1,90 @@
+#
+# Larger example of a synchronisation config file.
+#
+
+#
+# In this configuration example, we have a file server and a desktop
+# machine, both with lots of disk space.  We keep all our files on the file
+# server, which is always on, and use the spare space on the desktop to back
+# up to.
+#
+# Whenever the desktop is online for long enough, we start backing up to it.
+#
+# The continual-sync daemon running this configuration file would run on the
+# file server, as root, and have SSH keys set up to be able to SSH to the
+# desktop as root without a password.
+#
+# In this example we assume you're using the RPM installation of
+# continual-sync with the init script starting the daemon on boot.
+#
+# This config file assumes that these directories exist on the file server:
+#
+# /mnt/backups/timestamps/ - for the partial and full timestamp files
+# /var/run/continual-sync/ - for the status files
+# /var/log/continual-sync/ - for the transfer log files
+#
+# It will back up the following directories:
+#
+# /home/ -> desktop:/mnt/home/
+#   - full sync daily, partial every 10 minutes
+#
+# /var/lib/libvirt/ -> desktop:/mnt/kvm/
+#   - full sync weekly, no partial sync
+#
+# /mnt/centos6mirror/ -> desktop:/mnt/centos6mirror/
+#   - full sync weekly, partial sync every 2 hours
+#
+# Finally, it assumes that all the above desktop:/mnt/XXX directories are
+# individual mount points, so that the default destination validation
+# command can verify that they are mounted before trying to back up to them,
+# and that all the source directories are also their own mount points for
+# the same reason.
+#
+# This is so that if, for instance, /home fails to mount on the file server,
+# then the resultant empty /home doesn't get synchronised to the desktop's
+# copy, thus erasing the backup.
+#
+
+[defaults]
+exclude = *~			# exclude backups
+exclude = *.tmp			# exclude temp working files
+exclude = .~tmp~		# exclude rsync partial dirs
+exclude = .#*			# exclude temporary lock files
+exclude = .nfs*
+exclude = .gvfs
+source validation command = mountpoint -q %s
+destination validation command = ssh %h mountpoint -q %d
+log file = /var/log/continual-sync/%n.log
+status file = /var/run/continual-sync/%n.status
+full sync marker file = /mnt/backups/timestamps/full-%h-%n
+partial sync marker file = /mnt/backups/timestamps/partial-%h-%n
+sync lock = /var/lock/continual-sync-%h.lock
+
+
+[home]
+source = /home/
+destination = desktop:/mnt/home/
+full sync interval = 86400
+full sync retry = 3600
+partial sync interval = 30
+partial sync retry = 600
+
+
+[kvm]
+source = /var/lib/libvirt/
+destination = desktop:/mnt/kvm/
+full sync interval = 604800
+full sync retry = 14400
+partial sync interval = 0
+
+
+[centos6mirror]
+source = /mnt/centos6mirror/
+destination = desktop:/mnt/centos6mirror/
+full sync interval = 604800
+full sync retry = 7200
+partial sync interval = 7200
+partial sync retry = 7200
+
+
+# End of file.

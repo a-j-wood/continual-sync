@@ -1,0 +1,97 @@
+#
+# Example synchronisation config file.
+#
+
+# This configuration should be used with a foreground continual-sync
+# process, not a daemon, so you can run it from a particular directory.
+#
+# It will synchronise the directory you're in with the /tmp/z directory, as
+# an example of how synchronisation works.
+#
+# If you follow the log file in one terminal while making changes to the
+# directory you're running continual-sync from in another, you will be able
+# to see the partial synchronisation runs as they happen.
+
+# Section to define the defaults for all other sections.
+#
+[defaults]
+#
+# Some example exclusions.
+#
+exclude = *~			# Exclude backups
+exclude = *.tmp			# Exclude temp working files
+exclude = .~tmp~		# Exclude rsync partial dirs
+exclude = .#*			# Exclude temporary lock files
+status file = /tmp/status-%n	# keep a status file
+
+# Section to synchronise the current working directory with /tmp/z.
+#
+[example-cwd-section]
+source = ./
+destination = /tmp/z/
+
+# An example of a source validation command.  In this case, if the file
+# SOURCE-OK does not exist in the current directory, no synchronisations
+# will be run - the source directory won't even be watched for changes until
+# this command succeeds.
+#
+source validation command = test -e SOURCE-OK	# comment test goes here
+
+# An example of a destination validation command.  In this case, no
+# synchronisation will be attempted until you "mkdir /tmp/z".
+#
+destination validation command = test -d %d
+
+# The intervals and retry intervals have been made much smaller than the
+# defaults here, so you can quickly see changes happening when trying out
+# this example.
+#
+full sync interval = 120
+full sync retry = 30
+partial sync interval = 10
+partial sync retry = 5
+
+# Any subdirectories deeper than the recursion depth will not be watched for
+# changes.  They will still be picked up by rsync when a full sync is
+# performed.
+#
+recursion depth = 2
+
+# You can specify marker files whose timestamps will record the last time a
+# full or a partial sync was run.  This allows the information to persist
+# between invocations of continual-sync.
+#
+full sync marker file = /tmp/MARKER-FULL
+partial sync marker file = /tmp/MARKER-PARTIAL
+
+# Normally you would not specify the change queue and transfer list, as it
+# is usually easiest to let continual-sync generate them automatically.
+#
+# change queue = /tmp/CQ
+# transfer list = /tmp/XF
+
+# A working directory for each section is always created under the temporary
+# directory, to contain the default change queue and transfer list, and
+# other working files such as the excludes list for rsync.  The default
+# temporary directory is /tmp, but it can be overridden.
+#
+temporary directory = /var/tmp
+
+
+# A synchronisation lock can be useful if you have multiple sections and
+# want to ensure that certain sections don't run synchronisations at the
+# same time.
+#
+sync lock = /tmp/SYNC-LOCK
+
+# The default rsync options for both full and partial syncs can be changed
+# here.
+#
+full rsync options = --delete -axH
+partial rsync options = --delete -dlptgoDH
+
+# Record all activity to /tmp/LOG.
+#
+log file = /tmp/LOG
+
+# End of file.

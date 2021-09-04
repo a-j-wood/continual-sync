@@ -1,0 +1,103 @@
+.TH continual-sync 1 "December 2014" Linux "User Manuals"
+.SH NAME
+continual-sync \- keep duplicates of directory trees in sync
+.SH SYNOPSIS
+.B continual-sync
+[\fIOPTION...\fR]
+[\fISECTION...\fR]
+.br
+.B continual-sync
+[\fI\-h\fR|\fI\-V\fR]
+
+.SH DESCRIPTION
+.B continual-sync
+synchronises one directory tree with another, using
+.BR rsync (1),
+and efficiently keeps it up to date by using
+.BR watchdir (1)
+to watch for changes and then re-running
+.B rsync
+on only those files and directories which have changed.
+
+It can be used to mirror directories between machines asynchronously, for
+instance backing up your local files to an off-site file server.
+
+One synchronisation process is spawned for every
+.I SECTION
+listed on the command line.  If none are listed, then a process is spawned
+for every section defined by the configuration files (except the special
+.B defaults
+section).
+
+Some example configuration files are included with the documentation of this
+package.  If you used the RPM install, then they will be installed in your
+system's default documentation directory, such as
+.IR /usr/share/doc/continual-sync-0.0.5/ .
+
+.SH OPTIONS
+.TP
+.BR \-c ", " "\-\-config FILE"
+Read configuration details from
+.I FILE
+instead of the default
+.IR /etc/continual-sync.conf .
+
+This option can be specified multiple times to read multiple configuration
+files, or you can use the
+.B include
+directive within a file - see
+.BR continual-sync.conf (5).
+.TP
+.BR \-D ", " "\-\-daemon PIDFILE"
+Run as a daemon (detach from the controlling terminal and run in the
+background), and write the daemon's process ID to
+.IR PIDFILE .
+.TP
+.B \-h, \-\-help
+Print a usage message on standard output and exit successfully.
+.TP
+.B \-V, \-\-version 
+Print version information on standard output and exit successfully.
+
+
+.SH NOTES
+If you watch a lot of directories, you will probably need to increase the
+kernel parameter
+.IR fs.inotify.max_user_watches ,
+for example:
+.PP
+.in +4
+sysctl -w fs.inotify.max_user_watches=1048576
+.in
+.PP
+You may also need to increase
+.IR fs.inotify.max_user_instances .
+
+
+.SH BUGS
+As with
+.BR watchdir (1),
+source directories with a large number of subdirectories will not start
+synchronising until the initial scan has completed, which may take a few
+minutes.
+
+Changes involving files or directories which are not readable will not be
+picked up by a partial sync, and may result in synchronisations failing.
+
+Changes which do not modify the contents of a file - for example, changing
+permissions - are not picked up by a partial sync.
+
+
+.SH REPORTING BUGS
+Report bugs in
+.B continual-sync
+to continual-sync@ivarch.com or use the contact form linked from the package
+home page: <http://www.ivarch.com/programs/continual-sync.shtml>
+
+
+.SH SEE ALSO
+.BR continual-sync.conf "(5), " watchdir "(1), " rsync "(1), " lsyncd "(1), " rsync-inotify "(1), " inosync (1)
+
+
+.SH LICENSE
+This is free software, distributed under the ARTISTIC 2.0 license.

@@ -1,0 +1,560 @@
+.TH continual-sync.conf 5 "December 2014" Linux "File Formats and Conventions"
+.SH NAME
+continual-sync.conf \- The configuration file for continual-sync
+
+
+.SH SYNOPSIS
+The continual-sync.conf file is a configuration file for
+.BR continual-sync (1).
+It defines one or more directory trees to be synchronised, where to
+synchronise them to, and the associated parameters.
+
+
+.SH FILE FORMAT
+The file consists of sections and parameters.  A section begins with the
+name of the section in square brackets and continues until the next section
+begins.  Sections contain parameters of the form:
+.PP
+.in +4
+.IR name " = " value
+.in
+.PP
+The file is line-based - that is, each newline-terminated line represents
+either a comment, a section name or a parameter.
+.PP
+Section and parameter lines
+.BR "are case sensitive" .
+.PP
+Section names must consist only of alphanumeric characters, "-", ".",
+and "_".
+.PP
+Only the first equals sign in a parameter is significant.  Whitespace before
+or after the first equals sign is discarded.  Leading, trailing and internal
+whitespace in parameter names is irrelevant.  Leading and trailing
+whitespace in a parameter value is discarded.  Internal whitespace within a
+parameter value is retained verbatim.
+.PP
+Any hash ("#") character causes that hash, and the rest of that line, to be
+ignored.
+.PP
+A maximum of 999 sections can be defined, across all configuration files
+read by
+.BR continual-sync .
+
+
+.SH SECTIONS
+Each section defines a directory tree to be synchronised.  It must have a
+unique name and give a source and a destination.  The bare minimum for a
+valid section definition is therefore:
+.PP
+.in +4
+[section_name]
+.br
+source = /path/to/source/directory/
+.br
+destination = remotehost:/remote/path/to/sync/to/
+.in
+.PP
+Additional parameters may be specified to fine-tune the synchronisation process.
+
+The exception to the above is the special
+.B defaults
+section, which defines default values which are used by all other sections.  The
+.B defaults
+section must not specify either a source or a destination.
+
+
+.SH PARAMETERS
+These parameters can only appear within a section, and apply only to that section.
+Unless otherwise specified, every parameter is optional; any which are not
+defined will use the setting from the
+.B defaults
+section if there is one.
+
+.TP
+.B source
+The path to the directory to be used as the source for synchronisation.  It
+must be a normal pathname (not prefixed with a hostname) and must be a
+directory.
+
+This parameter is mandatory for every section except
+.BR defaults ,
+where it is forbidden.
+
+It is usually best to ensure that the trailing slash (/) is present to
+ensure correct operation with
+.BR rsync (1).
+
+.TP
+.B destination
+The path, as given to
+.BR rsync (1),
+to the directory to be used as the synchronisation destination.  It must be
+a directory, but can be in any form accepted by
+.BR rsync ,
+such as
+.IR remotehost:/path/ .
+
+This parameter is mandatory for every section except
+.BR defaults ,
+where it is forbidden.
+
+It is usually best to ensure that the trailing slash (/) is present to
+ensure correct operation with
+.BR rsync (1).
+
+.TP
+.B exclude
+A
+.BR glob (7)
+pattern to exclude.  Any file or directory, in any subdirectory of the
+source directory, which matches this pattern will be ignored.
+
+This parameter can be specified multiple times per section.
+
+The default is to exclude
+.BR "*.tmp" " and " "*~" ,
+unless overridden by the
+.B defaults
+section.
+
+.TP
+.B source validation command
+A command line (run with "\fBsh -c\fR") which must exit with 0 (success)
+before any watch can start and before any synchronisation will be performed.
+
+This can be used to check that the source directory is mounted.  For example:
+
+.in +4
+source validation command = mountpoint -q %s
+.in
+
+The default is to use no source validation command, unless overridden by the
+.B defaults
+section.  To explicitly state that no source validation command is to be
+run, use a value of
+.BR none .
+
+.TP
+.B destination validation command
+A command line (run with "\fBsh -c\fR") which must exit with 0 (success)
+before any synchronisation will be performed.
+
+This can be used to check that the destination host is up and the directory
+is mounted.  For example:
+
+.in +4
+destination validation command = ssh %h mountpoint -q %d
+.in
+
+The default is to use no destination validation command, unless overridden
+by the
+.B defaults
+section.  To explicitly state that no destination validation command is to
+be run, use a value of
+.BR none .
+
+.TP
+.B full sync interval
+The interval, in seconds, between full synchronisations.  A full
+synchronisation is done by running
+.BR rsync (1)
+over the entire source directory, regardless of what changes have been seen.
+
+If no
+.B full sync marker file
+has been defined, then a full sync is run every time the watch starts.
+
+The default full sync interval is 86400 seconds (1 day) unless overridden by
+the
+.B defaults
+section.
+
+If the full sync interval is set to 0, then a full sync will never be run. 
+This is not recommended unless you will be running a full sync yourself
+through some other mechanism, as the partial sync process is not perfect and
+so some changes may be missed.
+
+.TP
+.B full sync retry
+The number of seconds to wait after an unsuccessful full sync before trying
+another one.  An unsuccessful sync is one for which a validation command
+failed or where
+.B rsync
+returned nonzero.
+
+The default full sync retry wait time is 3600 seconds (1 hour) unless
+overridden by the
+.B defaults
+section.
+
+.TP
+.B partial sync interval
+The interval, in seconds, between partial synchronisations.  A partial
+synchronisation only runs
+.BR rsync (1)
+over the files and directories on which changes have been seen.
+
+The default partial sync interval is 30 seconds unless overridden by the
+.B defaults
+section.
+
+If the partial sync interval is set to 0, then the source directory will not
+be watched for changes and no partial synchronisations will be run.
+
+.TP
+.B partial sync retry
+The number of seconds to wait after an unsuccessful partial sync before
+trying another one.  An unsuccessful sync is one for which a validation
+command failed or where
+.B rsync
+returned nonzero.
+
+The default partial sync retry wait time is 300 seconds (5 minutes) unless
+overridden by the
+.B defaults
+section.
+
+.TP
+.B recursion depth
+The maximum number of subdirectories deep that a watch will descend.  If
+this is set too high, then excessive system resources will be consumed.
+
+The default recursion depth is 20 unless overridden by the
+.B defaults
+section.
+
+Subdirectories deeper than this will not be watched for changes, but they
+will be picked up by
+.B rsync
+when a full sync is run.
+
+.TP
+.B full sync marker file
+The path to a file which will have its last modification time updated every
+time a successful full sync is run.
+
+This can be used to ensure that a full sync is not run more often than the
+full sync interval, even if the program is restarted.
+
+The default is to use no full sync marker file, unless overridden by the
+.B defaults
+section.  To explicitly state that no full sync marker file is to be used,
+use a value of
+.BR none .
+
+.TP
+.B partial sync marker file
+The path to a file which will have its last modification time updated every
+time a successful partial sync is run.
+
+This can be used to expose the information to other programs.
+
+The default is to use no partial sync marker file, unless overridden by the
+.B defaults
+section.  To explicitly state that no partial sync marker file is to be
+used, use a value of
+.BR none .
+
+.TP
+.B change queue
+The path to a directory where
+.BR watchdir (1)
+can record details of changes to the source directory.  This directory
+must be empty, and not used by anything else, so must be unique for each
+section.  The contents are deleted when the transfer list is generated
+before each partial sync.
+
+The default is to create a temporary directory which is automatically
+removed when the program exits.  If a value has been specified in the
+.B defaults
+section, you can override it on a per-section basis with a value of
+.B none
+to go back to the temporary directory behaviour.
+
+.TP
+.B transfer list
+The path to a file which can be used to collate the changes from the change
+queue to produce a list of changes to pass to
+.BR rsync (1).
+The file is deleted and recreated, so must be unique for each section and
+must exist in a directory writable by the program.
+
+The default is to create a temporary file which is automatically removed
+when the program exits.  If a value has been specified in the
+.B defaults
+section, you can override it on a per-section basis with a value of
+.B none
+to go back to the temporary file behaviour.
+
+.TP
+.B temporary directory
+The temporary directory under which a working directory is created by each
+sync process, for the default change queue directory and transfer list, as
+well as other working files such as the excludes list.
+ 
+The default is 
+.IR /tmp ,
+or whatever is specified in the
+.B defaults
+section.
+
+.TP
+.B sync lock
+The path to a file which is locked with
+.BR lockf (3)
+prior to running a full or a partial sync.
+
+This can be used to ensure that only one sync at a time runs to a given
+destination; for example:
+
+.in +4
+[dir1]
+.br
+source = /home/dir1/
+.br
+destination = host1:/home/dir1/
+.br
+sync lock = /var/lock/sync-%h.lock
+.br
+ 
+.br
+[dir2]
+.br
+source = /home/dir2/
+.br
+destination = host1:/home/dir2/
+.br
+sync lock = /var/lock/sync-%h.lock
+.br
+ 
+.br
+[dir3]
+.br
+source = /home/dir3/
+.br
+destination = host2:/home/dir3/
+.br
+sync lock = /var/lock/sync-%h.lock
+.in
+
+In the above example,
+.B dir1
+and
+.B dir2
+share the same
+.B sync lock
+of
+.BR /var/lock/sync-host1.lock ,
+and so only one of them at a time would ever be running a sync;
+.B dir3
+uses a different lock and so could be running a sync at the same time as either
+.BR dir1 " or " dir2 .
+
+The default is not to use a lock, unless overridden by the
+.B defaults
+section.
+
+To explicitly state that no lock is to be used, specify a value of
+.BR none .
+
+.TP
+.B full rsync options
+The options to pass to
+.BR rsync (1)
+when running a full sync, other than the source, destination, and
+exclusions.
+
+The default is "\fB\-\-delete\ \-axH\fR".
+
+.TP
+.B partial rsync options
+The options to pass to
+.BR rsync (1)
+when running a partial sync, other than the source, destination, exclusions,
+and
+.I \-\-files\-from
+partial transfer list.
+
+The default is "\fB\-\-delete\ \-dlptgoDH\fR".
+
+.TP
+.B log file
+The file to record all activity to.  It is locked while writing, so can be
+shared by multiple sections, and closed while not being written to, so can
+be safely rotated with
+.BR logrotate (8).
+
+The default is to write no logs, unless overridden by the
+.B defaults
+section.
+
+To explicitly state that no log file is to be written, use a value of
+.BR none .
+
+.TP
+.B status file
+A file which contains the current status of this sync process.  It is
+rewritten every time something changes, and contains the following fields in the format
+.IR parameter " : " value ,
+one per line:
+.RS +4
+.TP
+.B section
+The section name.
+.TP
+.B current action
+The current action being performed on this section, if any: one of
+.BR - ,
+.BR VALIDATE-SOURCE ,
+.BR VALIDATE-DESTINATION ,
+.BR SYNC-FULL-AWAITING-LOCK ,
+.BR SYNC-FULL ,
+.BR SYNC-PARTIAL-AWAITING-LOCK ,
+or
+.BR SYNC-PARTIAL .
+.TP
+.B sync process
+The process ID of this section's sync process.
+.TP
+.B watcher process
+The process ID of the directory change watcher sub-process, or "-" if there
+isn't one.  There only wouldn't be one if the partial sync interval is 0 or
+if the source validation command failed.
+.TP
+.B last full sync status
+Whether the last full sync succeeded ("OK") or failed ("FAILED"), or "-" if
+none was run yet.
+.TP
+.B last partial sync status
+Whether the last partial sync succeeded ("OK") or failed ("FAILED"), or "-"
+if none was run yet.
+.TP
+.B last full sync
+The time of the last successful full sync.
+.TP
+.B last partial sync
+The time of the last successful partial sync.
+.TP
+.B next full sync
+The time when the next full sync will be attempted.
+.TP
+.B next partial sync
+The time when the next partial sync will be attempted.
+.TP
+.B failed full sync
+The time of the last failed full sync.
+.TP
+.B failed partial sync
+The time of the last failed partial sync.
+.TP
+.B full sync failures
+How many full syncs have failed in a row.
+.TP
+.B partial sync failures
+How many partial syncs have failed in a row.
+.TP
+.B working directory
+The temporary working directory used by this section's sync process for
+files like the
+.B rsync
+error log.
+.RE
+.TP
+.B ""
+Times are in YYYY-MM-DD HH:MM:SS format, in the local time zone, or "-" to
+mean "never".
+
+The status file is not read by the sync process - use the marker file
+options if you want to retain memory of the last full and partial sync times
+between invocations of
+.BR continual-sync (1).
+
+The default is to write no status file, unless overridden by the
+.B defaults
+section.
+
+To explicitly state that no status file is to be written, use a value of
+.BR none .
+
+
+.SH SPECIAL PARAMETERS
+The following special parameters can appear anywhere in a configuration file:
+.TP
+.B include
+Include the given configuration file(s) into this one.  Filenames can be
+relative to the current configuration file, and glob patterns are expanded. 
+For example, the following will include all configuration files found in
+.IR /etc/continual-sync.conf.d/ :
+
+.in +4
+include = /etc/continual-sync.conf.d/*
+.in
+
+Files ending in
+.IR ~ ", " .rpmsave ", " .rpmorig ", and " .rpmnew
+are automatically skipped.
+
+
+.SH VARIABLE SUBSTITUTIONS
+The following character sequences may be used in the values of certain
+parameters:
+.TP
+.B %n
+the current section name
+.TP
+.B %s
+the source directory
+.TP
+.B %h
+the destination host (defined as the part of
+.B destination
+before the first colon (":"), or "localhost" if there is no colon)
+.TP
+.B %d
+the destination directory (defined as the part of
+.B destination
+after the last colon (":"), or the whole destination if there is no colon)
+.PP
+These may be used in any of the following parameter values:
+.PP
+.in +4
+.B source validation command
+.br
+.B destination validation command
+.br
+.B full sync marker file
+.br
+.B partial sync marker file
+.br
+.B change queue
+.br
+.B transfer list
+.br
+.B temporary directory
+.br
+.B sync lock
+.br
+.B full rsync options
+.br
+.B partial rsync options
+.br
+.B log file
+.br
+.B status file
+.in
+
+
+.SH REPORTING BUGS
+Report bugs in
+.B continual-sync
+to continual-sync@ivarch.com or use the contact form linked from the package
+home page: <http://www.ivarch.com/programs/continual-sync.shtml>
+
+
+.SH SEE ALSO
+.BR continual-sync "(1), " watchdir "(1), " rsync "(1), " glob (7)
+
+
+.SH LICENSE
+This is free software, distributed under the ARTISTIC 2.0 license.

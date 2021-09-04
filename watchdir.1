@@ -1,0 +1,188 @@
+.TH watchdir 1 "December 2014" Linux "User Manuals"
+.SH NAME
+watchdir \- watch for changes in a directory tree
+.SH SYNOPSIS
+.B watchdir
+[\fIOPTION\fR]
+\fIDIRECTORY\fR
+\fIOUTPUTDIR\fR
+.br
+.B watchdir
+[\fI\-h\fR|\fI\-V\fR]
+
+.SH DESCRIPTION
+.B watchdir
+monitors the given
+.I DIRECTORY
+and all its subdirectories for changes.  At regular intervals, the names of
+the files and directories which have changed are written to a uniquely named
+file in the
+.I OUTPUTDIR
+directory:
+
+.IP * 3
+If a file is changed or created, its filename will be listed.
+.IP * 3
+If a file is removed, this is treated as a change to the directory it was
+in, so the directory will be listed.
+.IP * 3
+If a file is renamed, this is treated as a removal and creation, so both the
+file's new path and the directory containing its old name will be listed.
+
+.PP
+
+Changes to directories are treated in the same way:
+
+.IP * 3
+If a directory is created, the new directory will be listed.
+.IP * 3
+If a directory is removed, its parent directory will be listed.
+.IP * 3
+If a directory is renamed, its old parent directory will be listed, and its
+new path will be listed.
+
+.PP
+
+All paths are given relative to the top-level
+.IR DIRECTORY .
+Directory names always end in /, which means that just
+.B /
+on its own in a change file means that the top-level directory itself
+changed (i.e. a file or directory was removed from it).
+
+.PP
+
+The change files in
+.I OUTPUTDIR
+are given names of the form
+.B YYYYMMDD-hhmmss.pid
+where
+.I YYYY
+is the 4-digit year,
+.I MM
+is the 2-digit month,
+.I DD
+is the 2-digit day of the month,
+.IR hh ", " mm ", " ss
+are 2-digit hours, minutes, and seconds in the 24-hour clock, and
+.I pid
+is the process ID of
+.BR watchdir .
+
+.PP
+
+Note that
+.I OUTPUTDIR
+must not be a subdirectory of
+.IR DIRECTORY .
+
+
+.SH OPTIONS
+
+.TP
+.BR \-i ", " "\-\-dump\-interval SEC"
+Write change files every
+.I SEC
+seconds.  The default is 30 seconds.  No change files are written when there
+are no changes to report.
+.TP
+.BR \-f ", " "\-\-full\-scan\-interval SEC"
+Rescan
+.I DIRECTORY
+every
+.I SEC
+seconds, to pick up any changes that might have been missed.  The default
+is 7200 seconds (2 hours).
+.TP
+.BR \-e ", " "\-\-exclude PATTERN"
+A
+.BR glob (7)
+pattern to exclude.  Any file or directory, in any subdirectory of
+.IR DIRECTORY ,
+which matches this pattern will be ignored.
+
+This option can be specified multiple times.
+
+The default is to exclude
+.BR "*.tmp" " and " "*~" .
+.TP
+.BR \-r ", " "\-\-recursion\-depth NUM"
+Descend no more than
+.I NUM
+directories deep into
+.IR DIRECTORY .
+The default is 20.  It is not advisable to set this too high as it may cause
+excessive consumption of system resources.
+.TP
+.BR \-q ", " "\-\-queue\-run\-interval SEC"
+Process the
+.BR inotify (7)
+change queue every
+.I SEC
+seconds.  The default is 2 seconds.  This will rarely need to be changed.
+.TP
+.BR \-m ", " "\-\-queue\-run\-max SEC"
+Spend no longer than
+.I SEC
+seconds processing the change queue before checking
+.BR inotify (7)
+again, to avoid overflows caused by many changes happening at once.  The
+default is 5 seconds.  This will rarely need to be changed.
+.TP
+.B \-h, \-\-help
+Print a usage message on standard output and exit successfully.
+.TP
+.B \-V, \-\-version 
+Print version information on standard output and exit successfully.
+
+
+.SH NOTES
+If you watch a lot of directories, you will probably need to increase the
+kernel parameter
+.IR fs.inotify.max_user_watches ,
+for example:
+.PP
+.in +4
+sysctl -w fs.inotify.max_user_watches=1048576
+.in
+.PP
+You may also need to increase
+.IR fs.inotify.max_user_instances .
+
+The change files can be used directly as input to
+.BR rsync (1)'s
+.I --files-from
+option, like this:
+.PP
+.in +4
+rsync --delete -dlptgoDH --files-from=\fIOUTPUTDIR\fR/20140731-112501.1234 \fIDIRECTORY\fR remote:/dir/copy/
+.in
+.PP
+A similar command line is used by
+.BR continual-sync (1)
+when doing a partial sync.
+
+Changes to file permissions are not listed - only changes which alter the
+contents of a file or its last-modification time.
+
+
+.SH BUGS
+When watching a directory with a large number of subdirectories, it may take
+.BR watchdir (1)
+an inconveniently long time to finish scanning through them all and begin
+watching for changes.
+
+
+.SH REPORTING BUGS
+Report bugs in
+.B continual-sync
+to continual-sync@ivarch.com or use the contact form linked from the package
+home page: <http://www.ivarch.com/programs/continual-sync.shtml>
+
+
+.SH SEE ALSO
+.BR continual-sync "(1), " rsync "(1), " glob "(7), " lsyncd "(1), " rsync-inotify "(1), " inosync (1)
+
+
+.SH LICENSE
+This is free software, distributed under the ARTISTIC 2.0 license.
