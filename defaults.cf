@@ -9,6 +9,7 @@ exclude = .~tmp~		# exclude rsync partial dirs
 exclude = .#*			# exclude temporary lock files
 full rsync options = --delete -axH
 partial rsync options = --delete -dlptgoDH
+ignore vanished files = no
 log file = /var/log/continual-sync/%n.log
 status file = /var/run/continual-sync/%n.status
 

@@ -641,6 +641,7 @@ static int run_rsync(const char *log_file, const char *section,
 		     const char *source, const char *destination,
 		     const char *excludes_file, const char *options,
 		     const char *transfer_list,
+		     flag_t ignore_vanished_files,
 		     const char *rsync_error_file)
 {
 	char **rsync_argv;
@@ -651,7 +652,7 @@ static int run_rsync(const char *log_file, const char *section,
 	struct stat sb;
 
 	if (wordexp(options, &p, WRDE_NOCMD) != 0) {
-		error("%s: %s", "wordexp", strerror(errno));
+		error("%s: [%s]: %s", "wordexp", options, strerror(errno));
 		return -1;
 	}
 
@@ -765,6 +766,12 @@ static int run_rsync(const char *log_file, const char *section,
 			    "rsync failed with exit status", rc);
 	}
 
+	if ((24 == rc) && (ignore_vanished_files)) {
+		log_message(log_file, "[%s] %s", section,
+			    "ignoring vanished files");
+		rc = 0;
+	}
+
 	return rc;
 }
 
@@ -837,7 +844,8 @@ static int sync_full(struct sync_set_s *cf, struct sync_status_s *st)
 		       st->excludes_file,
 		       NULL ==
 		       cf->full_rsync_opts ? "--delete -axH" :
-		       cf->full_rsync_opts, NULL, st->rsync_error_file);
+		       cf->full_rsync_opts, NULL,
+		       cf->ignore_vanished_files, st->rsync_error_file);
 
 	log_message(cf->log_file, "[%s] %s: %s: %s", cf->name,
 		    _("full sync"), _("sync ended"),
@@ -1057,7 +1065,7 @@ static int sync_partial(struct sync_set_s *cf, struct sync_status_s *st)
 		       NULL ==
 		       cf->partial_rsync_opts ? "--delete -dlptgoDH" :
 		       cf->partial_rsync_opts, cf->transfer_list,
-		       st->rsync_error_file);
+		       cf->ignore_vanished_files, st->rsync_error_file);
 
 	log_message(cf->log_file, "[%s] %s: %s: %s", cf->name,
 		    _("partial sync"), _("sync ended"),

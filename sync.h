@@ -38,6 +38,7 @@ struct sync_set_s {
 	char *sync_lock;
 	char *full_rsync_opts;
 	char *partial_rsync_opts;
+	flag_t ignore_vanished_files;
 	char *log_file;
 	char *status_file;
 	flag_t selected;		 /* set if selected on cmd line */
@@ -54,6 +55,7 @@ struct sync_set_s {
 		flag_t partial_interval;
 		flag_t partial_retry;
 		flag_t recursion_depth;
+		flag_t ignore_vanished_files;
 	} set;
 };
 

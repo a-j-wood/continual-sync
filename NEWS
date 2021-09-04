@@ -1,3 +1,7 @@
+0.0.6 - 4 September 2021
+  * Added an "ignore vanished files" option
+  * Updated the init script to create /var/run/continual-sync on startup
+
 0.0.5 - 12 December 2014
   * repackaged as an Open Source project with permission from my employer
 

@@ -248,6 +248,11 @@ debug("(cf) %s: %s: %s -> %lu", config_sections[idx].name, #x, "using default", 
 		copy_default_ulong(partial_interval);
 		copy_default_ulong(partial_retry);
 		copy_default_ulong(recursion_depth);
+#define copy_default_flag(x) if ((0 == config_sections[idx].set.x) && (0 != config_sections[defaults_idx].set.x)) { \
+config_sections[idx].x = config_sections[defaults_idx].x; \
+debug("(cf) %s: %s: %s -> %s", config_sections[idx].name, #x, "using default", config_sections[defaults_idx].x ? "yes" : "no"); \
+}
+		copy_default_flag(ignore_vanished_files);
 
 		if ((0 == config_sections[idx].exclude_count)
 		    && (0 != config_sections[defaults_idx].exclude_count)) {
@@ -413,6 +418,7 @@ static int parse_config(const char *filename, int depth)
 			section->partial_interval = 30;
 			section->partial_retry = 300;
 			section->recursion_depth = 20;
+			section->ignore_vanished_files = 0;
 
 			continue;
 
@@ -568,6 +574,14 @@ section->Y = param_ulong; \
 section->set.Y = 1; \
 continue; \
 }
+#define cf_flag(X, Y) if (sscanf(linebuf, " " X, param_str) == 1) { \
+section->Y = 0; \
+if (strncasecmp("yes", param_str, 3) == 0) section->Y = 1; \
+if (strncasecmp("on", param_str, 2) == 0) section->Y = 1; \
+debug("(cf) %s: %d: %s = [%s]", filename, lineno, #Y, section->Y ? "yes" : "no"); \
+section->set.Y = 1; \
+continue; \
+}
 		cf_string("source = %4095[^\n]", source);
 		cf_string("destination = %4095[^\n]", destination);
 		cf_string("source validation command = %4095[^\n]",
@@ -583,6 +597,8 @@ continue; \
 			  full_marker);
 		cf_string("partial sync marker file = %4095[^\n]",
 			  partial_marker);
+		cf_flag("ignore vanished files = %4095[^\n]",
+			ignore_vanished_files);
 		cf_string("change queue = %4095[^\n]", change_queue);
 		cf_string("transfer list = %4095[^\n]", transfer_list);
 		cf_string("temporary directory = %4095[^\n]", tempdir);

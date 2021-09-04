@@ -15,6 +15,7 @@
 case "$1" in
   start)
 	echo -n "Starting continual sync daemon: "
+	mkdir -p /var/run/continual-sync
 	daemon continual-sync -D /var/run/continual-sync.pid
 	echo
 	touch /var/lock/subsys/continual-sync

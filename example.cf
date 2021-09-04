@@ -90,6 +90,11 @@ sync lock = /tmp/SYNC-LOCK
 full rsync options = --delete -axH
 partial rsync options = --delete -dlptgoDH
 
+# If your source directory often has transient files that disappear during
+# sync operations, causing errors, then try ignoring vanished files.
+#
+ignore vanished files = yes
+
 # Record all activity to /tmp/LOG.
 #
 log file = /tmp/LOG

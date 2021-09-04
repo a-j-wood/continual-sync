@@ -1,7 +1,6 @@
-# Restrict to: RHEL5 RHEL6
 Name:		continual-sync
 Summary:	Tool to keep duplicates of directory trees continually in sync
-Version:	0.0.5
+Version:	0.0.6
 Release:	1
 License:	Artistic 2.0
 Group:		System Environment/Tools
@@ -76,6 +75,10 @@ fi
 %doc README NEWS COPYING example.cf example-large.cf
 
 %changelog
+* Sat Sep  4 2021 Andrew Wood <continual-sync@ivarch.com> 0.0.6-1
+- Added an "ignore vanished files" option.
+- Updated the init script to create /var/run/continual-sync on startup.
+
 * Fri Dec 12 2014 Andrew Wood <continual-sync@ivarch.com> 0.0.5-1
 - Repackaged as an Open Source project with permission from my employer.
 

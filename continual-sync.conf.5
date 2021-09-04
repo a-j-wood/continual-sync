@@ -1,4 +1,4 @@
-.TH continual-sync.conf 5 "December 2014" Linux "File Formats and Conventions"
+.TH continual-sync.conf 5 "September 2021" Linux "File Formats and Conventions"
 .SH NAME
 continual-sync.conf \- The configuration file for continual-sync
 
@@ -377,6 +377,16 @@ and
 partial transfer list.
 
 The default is "\fB\-\-delete\ \-dlptgoDH\fR".
+
+.TP
+.B ignore vanished files
+If this is set to "yes" or "on", then an
+.BR rsync (1)
+exit status of 24, meaning "partial transfer due to vanished source files",
+is treated as if it were a successful transfer.
+
+Use this when files disappear from the source quite often, such as a
+Subversion repository that is in active use.
 
 .TP
 .B log file
